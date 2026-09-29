@@ -129,7 +129,7 @@ TRANSLATE_PROMPT = """তুমি একজন অনুবাদক। নি�
 {text}
 </message>"""
 
-TRANSLATING_TEXT = "Auto Translating..."
+TRANSLATING_TEXT = "Auto Translating... to bangla"
 FAIL_TEXT = "⚠️ এই মুহূর্তে অনুবাদ করা যাচ্ছে না।"
 
 
@@ -167,7 +167,7 @@ def handle_message(message):
             pass
         return
     else:
-        final = ("🌐 " + result)[:4000]
+        final = result[:4000]
 
     try:
         bot.edit_message_text(final, message.chat.id, sent.message_id)
