@@ -56,17 +56,6 @@ def run_with_timeout(fn, timeout):
     return box["value"]
 
 
-def is_rate_limit_error(err_text):
-    low = err_text.lower()
-    return (
-        re.search(r"\b429\b", err_text) is not None
-        or "quota" in low
-        or "resource_exhausted" in low
-        or "rate limit" in low
-        or "rate_limit" in low
-    )
-
-
 def call_gemini(prompt):
     global current_client_index
     deadline = time.time() + GEMINI_TIMEOUT
@@ -83,11 +72,9 @@ def call_gemini(prompt):
             current_client_index = idx
             return interaction.output_text.strip()
         except GeminiTimeout:
-            break
-        except Exception as e:
-            if is_rate_limit_error(str(e)):
-                continue
-            raise
+            continue  # এই Key হ্যাং করেছে, সময় বাকি থাকলে পরের Key দিয়ে চেষ্টা
+        except Exception:
+            continue  # এই Key যেকোনো কারণে ফেল করুক (rate limit, quota, network...), পরের Key দিয়ে চেষ্টা
     return None
 
 
@@ -129,8 +116,16 @@ TRANSLATE_PROMPT = """তুমি একজন অনুবাদক। নি�
 {text}
 </message>"""
 
-TRANSLATING_TEXT = "Auto Translating... to bangla"
+TRANSLATING_TEXT = "🌐 Translating to Bangla..."
 FAIL_TEXT = "⚠️ এই মুহূর্তে অনুবাদ করা যাচ্ছে না।"
+
+
+def _delete_after(chat_id, message_id, delay=60):
+    time.sleep(delay)
+    try:
+        bot.delete_message(chat_id, message_id)
+    except Exception:
+        pass
 
 
 def translate(text):
@@ -173,6 +168,10 @@ def handle_message(message):
         bot.edit_message_text(final, message.chat.id, sent.message_id)
     except Exception:
         pass
+
+    if final == FAIL_TEXT:
+        # "অনুবাদ করা যাচ্ছে না" মেসেজটা গ্রুপে জঞ্জাল না হয়ে থাকুক, ১ মিনিট পর নিজে থেকে মুছে যাবে
+        threading.Thread(target=_delete_after, args=(message.chat.id, sent.message_id), daemon=True).start()
 
 
 @bot.message_handler(
