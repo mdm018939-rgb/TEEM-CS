@@ -19,14 +19,14 @@ if not BOT_TOKEN:
 if not GEMINI_KEYS:
     raise ValueError("কমপক্ষে একটা GEMINI_KEY_1 environment variable সেট করতে হবে")
 
-GROUP_ID = -1002872325078   # বট শুধু এই গ্রুপেই কাজ করবে
+GROUP_ID = -1003144160463   # বট শুধু এই গ্রুপেই কাজ করবে
 GROUP_LINK = "https://t.me/teemcs"
 
 default_clients = [genai.Client(api_key=k) for k in GEMINI_KEYS]
 current_client_index = 0
 MODEL = "gemini-3.6-flash"
 GEMINI_TIMEOUT = 30        # সেকেন্ড
-MAX_INPUT_CHARS = 3000     # খুব লম্বা মেসেজ এর বেশি কাটা হবে
+MAX_TRANSLATE_CHARS = 300  # এর চেয়ে বড় মেসেজ অনুবাদ করা হবে না
 MIN_LETTERS = 3            # এর চেয়ে কম অক্ষরের মেসেজ (যেমন "ok", "hi") অনুবাদ হবে না
 
 bot = telebot.TeleBot(BOT_TOKEN, num_threads=30)
@@ -136,11 +136,17 @@ def translate(text):
     return call_gemini(TRANSLATE_PROMPT.replace("{text}", safe))
 
 
+def get_message_text(message):
+    """সাধারণ টেক্সট মেসেজ ছাড়াও ফরোয়ার্ড করা ছবি/ভিডিও/ডকুমেন্টের ক্যাপশনও ধরে।"""
+    return message.text or message.caption or ""
+
+
 def handle_message(message):
-    text = (message.text or "").strip()
+    text = get_message_text(message).strip()
+    if len(text) > MAX_TRANSLATE_CHARS:
+        return  # খুব বড় মেসেজ অনুবাদ করা হবে না
     if not needs_translation(text):
         return
-    text = text[:MAX_INPUT_CHARS]
 
     # ইউজারের মেসেজে Reply হিসেবে "Translating..." পাঠানো হয়, পরে সেটাই এডিট হয়ে অনুবাদ হবে
     try:
@@ -177,10 +183,13 @@ def handle_message(message):
         threading.Thread(target=_delete_after, args=(message.chat.id, sent.message_id), daemon=True).start()
 
 
+CAPTIONABLE_TYPES = ("photo", "video", "document", "animation", "audio", "voice")
+
+
 @bot.message_handler(
     func=lambda m: (
         m.chat.id == GROUP_ID
-        and m.content_type == "text"
+        and (m.content_type == "text" or (m.content_type in CAPTIONABLE_TYPES and m.caption))
         and not (m.text or "").startswith("/")
         and not getattr(m.from_user, "is_bot", False)
     )
