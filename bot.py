@@ -72,9 +72,12 @@ def call_gemini(prompt):
             current_client_index = idx
             return interaction.output_text.strip()
         except GeminiTimeout:
-            continue  # এই Key হ্যাং করেছে, সময় বাকি থাকলে পরের Key দিয়ে চেষ্টা
-        except Exception:
-            continue  # এই Key যেকোনো কারণে ফেল করুক (rate limit, quota, network...), পরের Key দিয়ে চেষ্টা
+            print(f"[Gemini] Key #{idx + 1} timeout, trying next key...")
+            continue
+        except Exception as e:
+            # আসল এরর Render-এর Logs-এ দেখা যাবে, যাতে বোঝা যায় ঠিক কী কারণে ফেল করছে
+            print(f"[Gemini] Key #{idx + 1} failed: {e}")
+            continue
     return None
 
 
