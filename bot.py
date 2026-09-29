@@ -18,7 +18,7 @@ if not BOT_TOKEN:
 if not GEMINI_KEYS:
     raise ValueError("কমপক্ষে একটা GEMINI_KEY_1 environment variable সেট করতে হবে")
 
-GROUP_ID = -1003144160463   # বট শুধু এই গ্রুপেই কাজ করবে
+GROUP_ID = -1002872325078   # বট শুধু এই গ্রুপেই কাজ করবে
 
 default_clients = [genai.Client(api_key=k) for k in GEMINI_KEYS]
 current_client_index = 0
@@ -127,7 +127,7 @@ TRANSLATE_PROMPT = """তুমি একজন অনুবাদক। নি�
 {text}
 </message>"""
 
-TRANSLATING_TEXT = "Translating..."
+TRANSLATING_TEXT = "Auto Translating..."
 FAIL_TEXT = "⚠️ এই মুহূর্তে অনুবাদ করা যাচ্ছে না।"
 
 
